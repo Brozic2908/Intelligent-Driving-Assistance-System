@@ -1,12 +1,13 @@
 import styles from "./Sidebar.module.css"
 
-const SideBar =() =>{
+const SideBar = () => {
   return (
     <div className={styles.wrapper}>
-      <ul>
-        <li>
-          Content Sidebar
-        </li>
+      <ul className={styles.list}>
+        <li>Home</li>
+        <li>Services</li>
+        <li>Profile</li>
+        <li>Logout</li>
       </ul>
     </div>
   )

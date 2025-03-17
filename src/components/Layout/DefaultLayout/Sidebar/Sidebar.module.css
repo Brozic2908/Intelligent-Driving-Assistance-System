@@ -5,5 +5,13 @@
   top: 6.35rem;
   left: 0;
   width: 24rem;
-  background-color: aqua;
+  background-color: #ffffff;
+}
+
+.list{
+  list-style: none;
+}
+.list li{
+  padding: 2.4rem;
+  cursor: pointer;
 }

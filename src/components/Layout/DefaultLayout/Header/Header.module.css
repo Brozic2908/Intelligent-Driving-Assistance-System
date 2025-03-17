@@ -12,5 +12,34 @@
 .content{
   height: 100%;
   width: 100%;
-  background-color: #ccc;
+  background-color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2rem;
+}
+
+.logo{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.SDA{
+  padding: 2.4rem;
+  font-size: 3rem;
+  font-family: sans-serif;
+  color: #0A2B6C;
+}
+
+.action{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.action img{
+  margin-right: 2rem;
+  cursor: pointer;
+  height: 4rem;
 }
