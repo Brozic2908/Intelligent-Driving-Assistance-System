@@ -1,0 +1,9 @@
+.wrapper{
+  height: 100%;
+  flex: 1;
+  position: fixed;
+  top: 6.35rem;
+  left: 0;
+  width: 24rem;
+  background-color: aqua;
+}

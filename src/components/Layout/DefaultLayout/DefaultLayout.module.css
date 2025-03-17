@@ -1,0 +1,12 @@
+.wrapper{
+  display: flex;
+}
+
+.container{
+  flex: 4;
+  background-color: bisque;
+  position: fixed;
+  top: 6.35rem;
+  left: 24rem;
+  width: calc(100% - 24rem);
+}
