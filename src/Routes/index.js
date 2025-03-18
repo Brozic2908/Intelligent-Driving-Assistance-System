@@ -1,13 +1,13 @@
-import Home from '../pages/Home/Home'
-import Login from '../pages/Login/Login'
+import Home from '../pages/Home'
+import Services from '../pages/Services'
+import Profile from '../pages/Profile'
+import Auth from '../pages/Auth'
 
 const publicRoutes = [
-  {path: '/', component: Home},
+  {path: '/', component: Auth},
   {path: '/home', component: Home},
-  {path: '/login', component: Login, layout: null},
-]
-const privateRoutes = [
-
+  {path: '/services', component: Services},
+  {path: '/profile', component: Profile},
 ]
 
-export {publicRoutes, privateRoutes}
+export {publicRoutes}
