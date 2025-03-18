@@ -12,7 +12,7 @@ function AuthSection() {
 
   return (
     <div className="auth-section">
-      <div className="row justify-content-evenly align-items-center">
+      <div className="row justify-content-around align-items-center">
         <CardTop isLogin={isLogin} />
         <TextOverlay />
         <div className="col-md-5 login-area">

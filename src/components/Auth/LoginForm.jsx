@@ -10,10 +10,10 @@ function LoginForm({ showSignUp }) {
     // const username = document.getElementById('username_log').value;
     // const password = document.getElementById('password_log').value;
     
-    // if (username && password) { // Điều kiện đơn giản, có thể thay bằng logic thật
-    // } else {
-    //   alert('Please enter username and password');
-    // }
+    if (username && password) {
+    } else {
+      alert('Please enter username and password');
+    }
   };
 
   return (
