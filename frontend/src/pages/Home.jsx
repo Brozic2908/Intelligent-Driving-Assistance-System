@@ -1,3 +1,4 @@
+<<<<<<< HEAD:frontend/src/pages/Home.jsx
 import React, { useState, useEffect } from 'react';
 import styles from '../components/Home/Home.module.css'
 
@@ -164,5 +165,15 @@ const Home = () => {
     </>
   );
 };
+=======
+function Home() {
+  return (
+    <div className="container">
+      <h1 className="text-center m-0 pt-3 pb-3">Welcome to Home Page</h1>
+      <p className="text-center">You have successfully logged in!</p>
+    </div>
+  );
+}
+>>>>>>> origin/main:src/pages/Home.jsx
 
 export default Home;

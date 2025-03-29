@@ -25,7 +25,11 @@ const SideBar = () => {
           <div className={styles.icon}>
             <i className="fa-solid fa-gears"></i>
           </div>
+<<<<<<< HEAD:frontend/src/components/Home/Sidebar/Sidebar.jsx
           Devices
+=======
+          Services
+>>>>>>> origin/main:src/components/Home/Sidebar/Sidebar.jsx
         </NavLink></li>
         <li><NavLink to="/profile" className={({ isActive }) => clsx(
           styles.sidebarLink,

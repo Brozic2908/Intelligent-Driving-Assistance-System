@@ -1,4 +1,8 @@
 .main {
+<<<<<<< HEAD:frontend/src/components/Home/DefaultLayout.module.css
   background-color: #d7f7f4;
+=======
+  background-color: #effffd;
+>>>>>>> origin/main:src/components/Home/DefaultLayout.module.css
   min-height: 85vh;
 }

@@ -1,3 +1,4 @@
+<<<<<<< HEAD:frontend/src/components/Auth/SignUpForm.jsx
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
@@ -40,6 +41,13 @@ function SignUpForm({ showLogin }) {
       <div id="sign-up-form" className="form-container bg-white text-center">
         <h2 className="primary-color mb-4 auth-title">Sign Up</h2>
         <form onSubmit={handleSignUp}>
+=======
+function SignUpForm({ showLogin }) {
+    return (
+      <div id="sign-up-form" className="form-container bg-white text-center">
+        <h2 className="primary-color mb-4 auth-title">Sign Up</h2>
+        <form>
+>>>>>>> origin/main:src/components/Auth/SignUpForm.jsx
           <div className="mb-3 input-icon-container input-group">
             <label htmlFor="username_reg" className="input-group-text w-40px">
               <i className="fa-solid fa-user"></i>
@@ -63,6 +71,7 @@ function SignUpForm({ showLogin }) {
             />
           </div>
           <div className="mb-3 input-icon-container input-group">
+<<<<<<< HEAD:frontend/src/components/Auth/SignUpForm.jsx
             <label htmlFor="confirm_password" className="input-group-text w-40px">
               <i className="fa-solid fa-lock"></i>
             </label>
@@ -71,6 +80,38 @@ function SignUpForm({ showLogin }) {
               id="confirm_password"
               className="form-control"
               placeholder="Confirm Password"
+=======
+            <label htmlFor="email_reg" className="input-group-text w-40px">
+              <i className="fa-regular fa-envelope"></i>
+            </label>
+            <input
+              type="text"
+              id="email_reg"
+              className="form-control"
+              placeholder="Email"
+            />
+          </div>
+          <div className="mb-3 input-icon-container input-group">
+            <label htmlFor="phone_reg" className="input-group-text w-40px">
+              <i className="fa-solid fa-phone"></i>
+            </label>
+            <input
+              type="text"
+              id="phone_reg"
+              className="form-control"
+              placeholder="Phone Number"
+            />
+          </div>
+          <div className="mb-3 input-icon-container input-group">
+            <label htmlFor="address_reg" className="input-group-text w-40px">
+              <i className="fa-solid fa-location-dot"></i>
+            </label>
+            <input
+              type="text"
+              id="address_reg"
+              className="form-control"
+              placeholder="Address"
+>>>>>>> origin/main:src/components/Auth/SignUpForm.jsx
             />
           </div>
           <button type="submit" className="btn-login w-100 mb-4">

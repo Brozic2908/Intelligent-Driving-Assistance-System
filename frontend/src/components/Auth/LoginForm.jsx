@@ -1,5 +1,8 @@
 import { useNavigate } from 'react-router-dom';
+<<<<<<< HEAD:frontend/src/components/Auth/LoginForm.jsx
 import axios from 'axios';
+=======
+>>>>>>> origin/main:src/components/Auth/LoginForm.jsx
 
 function LoginForm({ showSignUp }) {
   const navigate = useNavigate();
@@ -8,13 +11,19 @@ function LoginForm({ showSignUp }) {
     e.preventDefault(); // Ngăn form submit mặc định
     navigate('/home'); // Chuyển hướng sang Home
     // Giả lập logic đăng nhập (bạn có thể thêm gọi API ở đây)
+<<<<<<< HEAD:frontend/src/components/Auth/LoginForm.jsx
     const username = document.getElementById('username_log').value;
     const password = document.getElementById('password_log').value;
+=======
+    // const username = document.getElementById('username_log').value;
+    // const password = document.getElementById('password_log').value;
+>>>>>>> origin/main:src/components/Auth/LoginForm.jsx
     
     if (username && password) {
     } else {
       alert('Please enter username and password');
     }
+<<<<<<< HEAD:frontend/src/components/Auth/LoginForm.jsx
 
     const request = {
       username: username,
@@ -34,6 +43,8 @@ function LoginForm({ showSignUp }) {
         alert('An error occurred during login');
       });
 
+=======
+>>>>>>> origin/main:src/components/Auth/LoginForm.jsx
   };
 
   return (
