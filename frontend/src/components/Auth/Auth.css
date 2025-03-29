@@ -8,7 +8,7 @@
     bottom: 0;
     width: 100%;
     height: 100vh;
-    background: url(.././images/bg_login.jpg) no-repeat center;
+    background: url(/src/assets/images/bg_login.jpg) no-repeat center; /* Đường dẫn từ public */
     background-size: cover;
     overflow: hidden;
 }
@@ -22,7 +22,6 @@
     width: 40px;
 }
 
-/* bg-overlay */
 .bg-overlay {
     position: absolute;
     left: -0.07%;
@@ -30,8 +29,7 @@
     top: 0%;
     bottom: 0%;
     z-index: 1;
-
-    background: linear-gradient(46.33deg, rgba(33, 33, 33, 0.6) 0%, rgba(66, 66, 66, 0.1) 178.98%);
+    background: linear-gradient(46.33deg, rgba(33, 33, 33, 0.8) 0%, rgba(66, 66, 66, 0.1) 178.98%);
 }
 
 .primary-color {
@@ -60,7 +58,8 @@
 }
 
 .text-overlay {
-    transform: translateY(50%);
+    font-size: 1.4rem;
+    transform: translateY(20%);
 }
 
 .card-top {
@@ -78,23 +77,14 @@
     font-size: 2rem;
     text-align: center;
     position: relative;
-    top: 55%;
+    top: 40%;
 }
 
-@keyframes slide-left {
-    0% {
-        transform: translateY(100%);
-    }
-    100% {
-        transform: translateY(0);
-    }
+.auth-title {
+    font-size: 2.4rem;
+    font-weight: 600;
 }
 
-@keyframes slide-right {
-    0% {
-        transform: translateY(-100%);
-    }
-    100% {
-        transform: translateY(0);
-    }
+.toggle-auth {
+    font-size: 1.2rem;
 }
