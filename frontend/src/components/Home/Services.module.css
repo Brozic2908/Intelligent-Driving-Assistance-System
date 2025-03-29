@@ -1,4 +1,3 @@
-<<<<<<< HEAD:frontend/src/components/Home/Services.module.css
 .servicesToggle {
     background-color: #fff;
     border-radius: 20px;
@@ -35,10 +34,4 @@
 
 .servicesToggleLabel {
     flex-grow: 1;
-=======
-.servicesToggle{
-    background-color: #fff;
-    border-radius: 20px;
-    box-shadow: 6px 12px 12px 0 rgba(0, 0, 0, 0.12);
->>>>>>> origin/main:src/components/Home/Services.module.css
 }

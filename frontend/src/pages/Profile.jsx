@@ -1,4 +1,3 @@
-<<<<<<< HEAD:frontend/src/pages/Profile.jsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import styles from "../components/Home/Profile.module.css"; // Import CSS module
@@ -158,14 +157,3 @@ function Profile() {
 }
 
 export default Profile;
-=======
-import React from 'react'
-
-function Profile() {
-  return (
-    <div>Profile Page</div>
-  )
-}
-
-export default Profile 
->>>>>>> origin/main:src/pages/Profile.jsx

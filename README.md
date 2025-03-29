@@ -1,12 +1,23 @@
-# React + Vite
+# Hướng Dẫn Cài Đặt và Chạy Dự Án
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Cài Đặt Dự Án
+Sử dụng một trong các lệnh sau để cài đặt dependencies:
 
-Currently, two official plugins are available:
+```sh
+npm install
+# hoặc
+yarn install
+```
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Chạy Dự Án
+Sử dụng một trong các lệnh sau để khởi động dự án:
 
-## Expanding the ESLint configuration
+```sh
+npm run dev
+# hoặc để có thể truy cập từ các thiết bị khác trong mạng LAN
+npm run dev -- --host
+# hoặc sử dụng yarn
+yarn run dev -- --host
+```
 
-If you are developing a production application, we recommend using TypeScript and enable type-aware lint rules. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Sau khi chạy, truy cập vào đường dẫn hiển thị trên terminal để xem ứng dụng.
