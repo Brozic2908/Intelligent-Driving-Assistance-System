@@ -1,167 +1,397 @@
 import React, { useState, useEffect } from 'react';
 import styles from '../components/Home/Home.module.css'
 
+import axios from 'axios';
+
+import { useContext } from 'react';
+import { UserContext } from '../hooks/UserContext.jsx';
+
+import RangeSlider from 'react-range-slider-input';
+import 'react-range-slider-input/dist/style.css';
+import debounce from 'lodash.debounce';
+import "../components/Home/Slider.css"
+
+import { SensorTypes, IOTServices } from '../utils/IOTServices.jsx';
+
 const Home = () => {
+  const { servicesState } = useContext(UserContext);
+
   const [data, setData] = useState({
-    distance: 120, // cm
-    temperature: 28, // Celsius
-    humidity: 65, // Percentage
-    lightLevel: 75, // Percentage
-    incline: 2, // Degrees
+    distance: 0, // cm
+    temperature: 0, // Celsius
+    humidity: 0, // Percentage
+    lightLevel: 0, // Percentage
+    incline: 0, // Degrees
     headlightsMode: "Auto", // Auto, Manual, Off
-    headlightsBrightness: 2, // 1-4 (Dim, Low, Medium, High)
+    headlightsBrightness: 0, // 1-4 (Dim, Low, Medium, High)
     driverStatus: "Alert", // Alert, Tired, Distracted
     airConditioner: {
       status: "Auto",
-      temperature: 22,
+      temperature: 0,
     }
   });
-  // Tích hợp API
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // simulate real-time updates
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setData(prevData => ({
-        ...prevData,
-        distance: Math.max(20, prevData.distance + Math.floor(Math.random() * 11) - 5),
-        temperature: Math.max(0, Math.min(40, prevData.temperature + (Math.random() - 0.5))),
-        humidity: Math.max(30, Math.min(90, prevData.humidity + (Math.random() - 0.5) * 2)),
-        headlightsBrightness: Math.max(0, Math.min(100, prevData.lightLevel + (Math.random() - 0.5) * 5)),
-        incline: Math.max(-10, Math.min(10, prevData.incline + (Math.random() - 0.5))),
-      }));
-    }, 2000);
+  // Kiểm tra an toàn để tránh lỗi undefined
+  const safeServicesState = servicesState;
 
-    return () => clearInterval(interval);
+  const handleGetSensorData = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Filter sensor types based on active services
+      const activeSensorTypes = [];
+      if (servicesState.air_cond_service) {
+        activeSensorTypes.push(SensorTypes.temp, SensorTypes.humid);
+      }
+      if (servicesState.headlight_service) {
+        activeSensorTypes.push(SensorTypes.lux);
+      }
+      if (servicesState.dist_service) {
+        activeSensorTypes.push(SensorTypes.dist);
+      }
+
+      // Join filtered sensor types with comma
+      const sensorTypesParam = activeSensorTypes.join(',');
+      
+      const response = await axios.get(`${import.meta.env.VITE_SERVER_URL}/app/data`, {
+        params: {
+          sensor_types: sensorTypesParam
+        },
+        withCredentials: true,
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      // Keep existing values if response or data is empty
+      if (!response?.data?.length) {
+        return;
+      }
+
+      const sensorList = response.data.slice(0, 10);
+      const newData = { ...data }; // Create a copy of current data to update
+
+      sensorList.forEach(sensor => {
+        const value = parseFloat(sensor.value);
+        let type = sensor.sensor_type.toString().toLowerCase().replace(/\s+|\W+/g, '');
+
+        switch (type) {
+          case SensorTypes.temp:
+            newData.temperature = value;
+            break;
+          case SensorTypes.humid:
+            newData.humidity = value;
+            break;
+          case SensorTypes.dist:
+            newData.distance = value;
+            break;
+          case SensorTypes.lux:
+            newData.lightLevel = value;
+            break;
+
+          default:
+            break;
+        }
+      });
+
+      setData(newData);
+    } catch (error) {
+      console.error('Error fetching sensor data:', error);
+      if (error.response?.status === 401) {
+
+        setError('Unauthorized access. Please login again.');
+      } else {
+        
+        setError('Failed to fetch sensor data.');
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    handleGetSensorData();
+    // const interval = setInterval(handleGetSensorData, 2000);
+    // return () => clearInterval(interval);
   }, []);
 
-  // Distance warning indicator
-  const getDistanceWarning = () => {
-    if (data.distance < 50) return { class: "bg-danger", message: "Danger" };
-    if (data.distance < 100) return { class: "bg-warning", message: "Warning" };
+  // Define the function to determine distance warning
+  const getDistanceWarning = (distance) => {
+    if (distance < 50) return { class: "bg-danger", message: "Danger" };
+    if (distance < 100) return { class: "bg-warning", message: "Warning" };
     return { class: "bg-success", message: "Safe" };
   };
 
-  const distanceWarning = getDistanceWarning();
+  // Compute the warning dynamically based on the current distance
+  const distanceWarning = getDistanceWarning(data.distance);
 
+  const [sliderValues, setSliderValues] = useState({
+    airConditioner: [0, 0],
+    headLight: [0, 0],
+  });
+  
+  const handleSliderChange = debounce(async (value, sliderName) => {
+    console.log('Updating slider:', sliderName, 'with value:', value);
+    setSliderValues((prevValues) => ({
+      ...prevValues,
+      [sliderName]: value,
+    }));
+  
+    try {
+      const response = await axios.post(`${import.meta.env.VITE_SERVER_URL}/iot/slider`, {
+        name: sliderName, 
+        min: value[0],
+        max: value[1],
+      }, {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      console.log(`Slider ${sliderName} API Response:`, response.data);
+    } catch (error) {
+      console.error(`Slider ${sliderName} Error:`, error.response?.data || error.message);
+    }
+  }, 300);
+
+  const handleGetUserData = async () => {
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_SERVER_URL}/user/`, {
+        withCredentials: true,
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (response) {
+        console.log('User data fetched successfully: ', response.data);
+
+        // TODO: handle store user data
+      }
+    } catch (error) {
+      if (error.response.status === 401) {
+        // TODO: handle unauthorized error
+
+      } else {
+        // TODO: handle internal server error
+
+      }
+    }
+  };
+
+  const handleGetUserAvatar = async () => {
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_SERVER_URL}/user/avatar`, {
+        withCredentials: true,
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (response) {
+        console.log('User avatar fetched successfully: ', response.data);
+
+        // TODO: handle store user avatar
+      }
+    } catch (error) {
+      if (error.response.status === 401) {
+        // TODO: handle unauthorized error
+
+      } else if (error.response.status === 404) {
+        // TODO: handle not found error
+
+      } else {
+        // TODO: handle internal server error
+
+      }
+    }
+  };
+
+  const handleGetServicesConfig = async () => {
+    try {
+      const response = await axios.get(`${import.meta.env.VITE_SERVER_URL}/app/config`, {
+        withCredentials: true,
+        headers: { 'Content-Type': 'application/json' },
+      });
+
+      if (response) {
+        console.log('Services config fetched successfully: ', response.data);
+      
+        // TODO: handle store services config
+      }
+    } catch (error) {
+      if (error.response.status === 401) {
+        // TODO: handle unauthorized error
+      
+      } else {
+        // TODO: handle internal server error
+
+      }
+    }
+  };
 
   return (
-    <>
-
-      <div className='row'>
-        {/* Distance Sensor Panel */}
-        <div className="col-md mb-3">
-          <div className={[styles.panel, `p-4 shadow bg-white rounded`].join(" ")}>
-            <h4 className="mb-2">Air conditioning</h4>
-            <div className='mb-2'>
+    <div className="container-fluid p-0">
+      {/* First Row */}
+      <div className="row g-3 mb-3">
+        {/* Air Conditioning Panel */}
+        <div className="col-12 col-lg-4">
+          <div className={[
+            styles.panel,
+            `p-4 shadow bg-white rounded`,
+            !safeServicesState.air_cond_service ? styles.inactiveService : ''
+          ].join(" ")}>
+            <h4 className="mb-3">Air conditioning</h4>
+            <div className='mb-3'>
               <p className='mb-1 small text-body-tertiary'>Temperature</p>
-              {/* variable temperature */}
-              <p className="fw-bold fs-2 mb-1">{data.temperature.toFixed(1)}°C</p>
+              <p className="fw-bold fs-2 mb-1">{data.temperature?.toFixed(1)}°C</p>
             </div>
-            <div className='mb-2'>
+            <div className='mb-3'>
               <p className='mb-1 small text-body-tertiary'>Humidity</p>
-              {/* variable humidity */}
-              <p className="fw-bold fs-2 mb-1">{data.humidity.toFixed(1)}</p>
+              <p className="fw-bold fs-2 mb-1">{data.humidity?.toFixed(1)}%</p>
             </div>
-            <div className='mb-2'>
+            {/* New version */}
+            <div>
               <p className='mb-2 small text-body-tertiary'>Air conditioning</p>
-              {/* variable air conditioning */}
               <div className='d-flex flex-wrap'>
-                {/* variable warning */}
-                <button className={`rounded btn text-white bg-primary me-2 mb-2 px-3 py-1`}>Auto</button>
-                <button className={`rounded btn text-white bg-secondary me-2 mb-2 px-3 py-1`}>Manual</button>
-                <button className={`rounded btn mb-2 text-white bg-secondary px-3 py-1`}>Off</button>
+                <button disabled={!safeServicesState.air_cond_service} 
+                        className={`rounded btn text-white ${data.airConditioner?.status === 'Auto' ? 'bg-primary' : 'bg-secondary'} me-2 mb-2 px-3 py-1`}>
+                  Auto
+                </button>
+                <button disabled={!safeServicesState.air_cond_service} 
+                        className={`rounded btn text-white ${data.airConditioner?.status === 'Manual' ? 'bg-primary' : 'bg-secondary'} me-2 mb-2 px-3 py-1`}>
+                  Manual
+                </button>
+                <button disabled={!safeServicesState.air_cond_service} 
+                        className={`rounded btn text-white ${data.airConditioner?.status === 'Off' ? 'bg-primary' : 'bg-secondary'} mb-2 px-3 py-1`}>
+                  Off
+                </button>
               </div>
             </div>
+            {/* Old version */}
+            {/* <div className='mb-2'>
+              <p className='mb-2 small text-body-tertiary'>Air conditioning</p>
+              <div className='d-flex flex-wrap'>
+                <button className={`rounded btn text-white ${data.airConditioner?.status === 'Auto' ? 'bg-primary' : 'bg-secondary'} me-2 mb-2 px-3 py-1`}>Auto</button>
+                <button className={`rounded btn text-white ${data.airConditioner?.status === 'Manual' ? 'bg-primary' : 'bg-secondary'} me-2 mb-2 px-3 py-1`}>Manual</button>
+                <button className={`rounded btn text-white ${data.airConditioner?.status === 'Off' ? 'bg-primary' : 'bg-secondary'} mb-2 px-3 py-1`}>Off</button>
+              </div>
+              <div className="title">Air conditioning</div><RangeSlider className="Air conditioning"  value={sliderValues.airConditioner} step={20} onInput={(value) => handleSliderChange(value,'airConditioner')}  thumbsDisabled={[true, false]}  rangeSlideDisabled={true}/>
+              <p>Current Value: {sliderValues.airConditioner[1]}</p>
+            </div> */}
           </div>
         </div>
-        <div className="col-md mb-3">
-          <div className={[styles.panel, `p-4 shadow bg-white rounded`].join(" ")}>
-            <h4 className="mb-2">Driver monitoring</h4>
-            <div className='mb-2 d-flex align-items-center'>
+
+        {/* Driver Monitoring Panel */}
+        <div className="col-12 col-lg-4">
+          <div className={[
+            styles.panel,
+            `p-4 shadow bg-white rounded`,
+            !safeServicesState.drowsiness_service ? styles.inactiveService : ''
+          ].join(" ")}>
+            <h4 className="mb-3">Driver Monitoring</h4>
+            <div className='mb-3 d-flex align-items-center'>
               <div className="rounded-circle me-2 bg-success" style={{ width: '16px', height: '16px' }}></div>
-              <p className='mb-0 fw-bold fs-4'>Conscious</p>
+              <p className='mb-0 fw-bold fs-4'>{data.driverStatus}</p>
             </div>
-            <div className='mb-2'>
-              <p className='mb-1 small text-body-tertiary'>Sleepiness detection sensitivity</p>
-              {/* variable humidity */}
+            <div className='mb-3'>
+              <p className='mb-2 small text-body-tertiary'>Sleepiness Detection Sensitivity</p>
               <div className='d-flex align-items-center'>
                 <span className='me-2 small'>Low</span>
-                <input
-                  type='range'
-                  min='0'
-                  max='10'
-                  value='3'
-                  onChange={() => { }}
-                  className='mx-2 flex-grow-1'
-                />
+                <input type='range' min='0' max='10' value='3' onChange={() => {}} 
+                       className='mx-2 flex-grow-1' disabled={!safeServicesState.driver_monitoring} />
                 <span className='ms-2 small'>High</span>
               </div>
             </div>
-            <div className='mb-2 bg-light rounded small'>
-              <p className='fw-medium mb-1 mt-3'>Recent announcements:</p>
-              <ul className="ms-3 list-unstyled mb-0">
-                <li className="text-success mb-1">✓ Sober driver</li>
-                <li className="text-muted mb-1">14:30 - Detect signs of fatigue</li>
-                <li className="text-muted">12:15 - Distraction Detection</li>
+            <div className='bg-light rounded p-3'>
+              <p className='fw-medium mb-2'>Recent Alerts:</p>
+              <ul className="list-unstyled mb-0">
+                <li className="text-muted mb-1">
+                  {new Date().toLocaleTimeString()} - Driver Status: {data.driverStatus}
+                </li>
               </ul>
             </div>
           </div>
         </div>
-        <div className="col-md col-md-4 mb-3">
-          <div className="p-4 mb-3 shadow bg-white rounded">
-            <h4 className="mb-1">Distance Sensor</h4>
+
+        {/* Smart Headlights Panel */}
+        <div className="col-12 col-lg-4">
+          <div className={[
+            styles.panel,
+            `p-4 shadow bg-white rounded`,
+            !safeServicesState.headlight_service ? styles.inactiveService : ''
+          ].join(" ")}>
+            <h4 className="mb-3">Smart Headlights</h4>
+            <div>
+              <p className='mb-2 small text-body-tertiary'>Ambient Light Intensity</p>
+              <div className="progress mb-1">
+                <div
+                  className="progress-bar bg-primary"
+                  role="progressbar"
+                  style={{ width: `${data.lightLevel}%` }}
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                ></div>
+              </div>
+              <p className="mb-3 text-end small">{data.lightLevel}%</p>
+              <div>
+                <p className='mb-2 small text-body-tertiary'>Headlight Mode</p>
+                <div className='d-flex flex-wrap'>
+                  <button disabled={!safeServicesState.headlight_service} 
+                          className={`rounded btn text-white ${data.headlightsMode === 'Auto' ? 'bg-primary' : 'bg-secondary'} me-2 mb-2 px-3 py-1`}>
+                    Auto
+                  </button>
+                  <button disabled={!safeServicesState.headlight_service} 
+                          className={`rounded btn text-white ${data.headlightsMode === 'Manual' ? 'bg-primary' : 'bg-secondary'} me-2 mb-2 px-3 py-1`}>
+                    Manual
+                  </button>
+                  <button disabled={!safeServicesState.headlight_service} 
+                          className={`rounded btn text-white ${data.headlightsMode === 'Off' ? 'bg-primary' : 'bg-secondary'} mb-2 px-3 py-1`}>
+                    Off
+                  </button>
+
+                </div>
+                <div className="title">Headlight </div><RangeSlider className="Headlight"  value={sliderValues.headLight} max={4} onInput={(value) => handleSliderChange(value,'headLight')}  thumbsDisabled={[true, false]}  rangeSlideDisabled={true}/>
+                <p>Current Value: {sliderValues.headLight[1]}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Second Row */}
+      <div className="row g-3">
+
+        
+        {/* Distance Sensor Panel */}
+        <div className="col-12 col-lg-4">
+          <div className={[
+            styles.panel,
+            `p-4 shadow bg-white rounded`,
+            !safeServicesState.dist_service ? styles.inactiveService : ''
+          ].join(" ")}>
+            <h4 className="mb-3">Distance Sensor</h4>
             <div className="d-flex justify-content-between align-items-center">
               <div>
-                {/* variable distance */}
                 <p className="fw-bold fs-2 mb-1">{data.distance} cm</p>
-                {/* variable warning */}
-                <button disabled className={`rounded btn text-white bg-success px-3 py-1 ${distanceWarning.class}`}>{distanceWarning.message}</button>
+                <button disabled className={`rounded btn text-white ${distanceWarning.class} px-3 py-1`}>
+                  {distanceWarning.message}
+                </button>
               </div>
               <div className={`${styles.distanceSensorIcon} rounded-5`}>
                 <i className="fa-solid fa-bolt"></i>
               </div>
             </div>
           </div>
-          <div className="p-4 mb-3 shadow bg-white rounded">
-            <h4 className="mb-1">Slope Detection</h4>
-            {/* variable Slope */}
-            <p className="fw-bold fs-2 mb-1">{data.incline.toFixed(1)}°</p>
-            <p className='mb-0 small text-body-tertiary'>Flat terrain</p>
-          </div>
+        </div>
+
+        {/* Additional service panels can be added here in the future */}
+        <div className="col-12 col-lg-4">
+          {/* Empty slot for future service */}
+        </div>
+        <div className="col-12 col-lg-4">
+          {/* Empty slot for future service */}
         </div>
       </div>
-      <div className='row'>
-        <div className='col-md col-md-6 mb-3'>
-          <div className="p-4 shadow bg-white rounded">
-            <h4 className="mb-2">Smart Headlights</h4>
-            <div>
-              <p className='mb-2 small text-body-tertiary'>Ambient light intensity</p>
-              <div className="progress">
-                <div className="progress-bar bg-primary"
-                  role="progressbar"
-                  // variable ambient light intensity
-                  style={{ width: `${data.lightLevel}%` }}
-                  aria-valuemin="0"
-                  aria-valuemax="100"></div>
-              </div>
-              <p className="mt-1 mb-0 text-end small">{data.lightLevel}%</p>
-              <div className='mt-1'>
-                <p className='mb-2 small text-body-tertiary'>Headlight mode</p>
-                {/* variable air conditioning */}
-                <div className='d-flex flex-wrap'>
-                  {/* variable warning */}
-                  <button className={`rounded btn text-white bg-primary me-2 mb-2 px-3 py-1`}>Auto</button>
-                  <button className={`rounded btn text-white bg-secondary me-2 mb-2 px-3 py-1`}>Manual</button>
-                  <button className={`rounded btn mb-2 text-white bg-secondary px-3 py-1`}>Off</button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
+    </div>
   );
 };
 

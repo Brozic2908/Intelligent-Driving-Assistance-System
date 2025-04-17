@@ -1,64 +1,83 @@
-from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import JSONResponse
+from utils.custom_logger import CustomLogger
+
+from fastapi import APIRouter, Request, Depends, File, UploadFile
+from fastapi.responses import JSONResponse, StreamingResponse
+
+from services.user_service import UserService
 
 from models.request import UserInfoRequest
-from services.user_service import UserService
 
 router = APIRouter()
 
-@router.get("/infor")
-async def get_user_info(request: Request):
-    uid = request.state.user_id
+def get_user_id(request: Request) -> str: 
+    return request.state.user_id
 
+@router.get("/")
+async def get_user_info(uid = Depends(get_user_id)):
     try:
-        user = UserService()._get_user_info(uid)
-        if user:
-            data = {
-                "uid": str(user["_id"]),
-                "username": user["username"]
-            }
-            for key in ["name", "email", "phone", "address"]:
-                if key in user:
-                    data[key] = user[key]
+        user_data = UserService()._get_user_info(uid)
 
-            return JSONResponse(
-                content=data,
-                status_code=200
-            )
-        else:
-            raise HTTPException(status_code=404, detail="User not found")
+        CustomLogger().get_logger().info(f"User info: {user_data}")
+
+        return JSONResponse(
+            content=user_data,
+            status_code=200,
+            media_type="application/json"
+        )
+            
         
     except Exception as e:
-        if e.args[0] == "Invalid ObjectID":
-            raise HTTPException(status_code=400, detail="Invalid user ID")
+        if e.args[0] == "User not find":
+            return JSONResponse(
+                content={"message": e.args[0], "detail": "Can not find any document with the uid that extracted from cookie's session"},
+                status_code=404
+            )
+        elif e.args[0] == "Invalid string to ObjectId conversion":
+            return JSONResponse(
+                content={"message":  e.args[0], "detail": "Can not extract uid from request's cookie's session"},
+                status_code=500
+            )
         else:
-            raise HTTPException(status_code=500, detail="Internal server error")
+            return JSONResponse(
+                content={"message":  "Internal server error ", "detail": e.args[0]},
+                status_code=500
+            )
     
-@router.put("/infor")
-async def update_user_info(request: Request, user_info_request: UserInfoRequest):
-    uid = request.state.user_id
-
+@router.patch("/")
+async def update_user_info(user_info_request: UserInfoRequest, uid = Depends(get_user_id)):
     try:
         UserService()._update_user_info(uid, user_info_request)
+        CustomLogger().get_logger().info(f"User info updated: {user_info_request}")
 
         return JSONResponse(
             content={"message": "User info updated successfully"},
-            status_code=200
+            status_code=200,
+            media_type="application/json"
         )
     
     except Exception as e:
-        if e.args[0] == "Invalid ObjectID":
-            raise HTTPException(status_code=400, detail="Invalid user ID")
+        if e.args[0] == "No data to update":
+            return JSONResponse(
+                content={"message": e.args[0], "detail": "Request contain no data to update"},
+                status_code=422
+            )
+        elif e.args[0] == "No user info updated":
+            return JSONResponse(
+                content={"message": e.args[0], "detail": "Can not find any document with the uid that extracted from cookie's session"},
+                status_code=404
+            )
         else:
-            raise HTTPException(status_code=500, detail="Internal server error")
+            return JSONResponse(
+                content={"message":  "Internal server error ", "detail": e.args[0]},
+                status_code=500
+            )
     
-@router.delete("/delete")
-async def delete_user_info(request: Request):
-    uid = request.state.user_id
-
+@router.delete("/")
+async def delete_user_info(uid = Depends(get_user_id)):
     try:
-        UserService()._delete_user_info(uid)
-
+        UserService()._delete_user_account(uid)
+        CustomLogger().get_logger().info(f"User info deleted: {uid}")
+        
         response = JSONResponse(
             content={},
             status_code=204
@@ -67,7 +86,77 @@ async def delete_user_info(request: Request):
         return response
     
     except Exception as e:
-        if e.args[0] == "Invalid ObjectID":
-            raise HTTPException(status_code=400, detail="Invalid user ID")
-        else:
-            raise HTTPException(status_code=500, detail="Internal server error")
+        return JSONResponse(
+            content={"message": "Internal server error ", "detail": e.args[0]},
+            status_code=500
+        )
+        
+@router.get("/avatar")
+async def get_user_avatar(uid = Depends(get_user_id)):
+    try:
+        file = UserService()._get_avatar(uid)
+        CustomLogger().get_logger().info(f"User avatar: {file.filename} - {file.chunk_size} bytes - {file.content_type}")
+
+        return StreamingResponse(file, media_type=file.content_type)
+
+    except Exception as e:
+        if e.args[0] == "User not find":
+            return JSONResponse(
+                content={"message": e.args[0], "detail": "Can not find any document with the uid that extracted from cookie's session"},
+                status_code=404
+            )
+        elif e.args[0] == "No avatar found":
+            return JSONResponse(
+                content={"message": e.args[0], "detail": "Can not find any document with the uid that extracted from cookie's session"},
+                status_code=404
+            )
+        return JSONResponse(
+            content={"message": "Internal server error ", "detail": e.args[0]},
+            status_code=500
+        )
+
+@router.put("/avatar")
+async def update_user_avatar(file: UploadFile = File(...), uid = Depends(get_user_id)):
+    try:
+        result = await UserService()._update_avatar(uid, file)
+
+        CustomLogger().get_logger().info(f"User avatar updated: {result.file_id} - {result.file_name} - {result.file_size} bytes - {result.file_type}")
+        
+        return JSONResponse(
+            content={"message": "User avatar updated successfully"},
+            status_code=200,
+            media_type="application/json"
+        )
+
+    except Exception as e:
+        if e.args[0] == "User not find":
+            return JSONResponse(
+                content={"message": e.args[0], "detail": "Can not find any document with the uid that extracted from cookie's session"},
+                status_code=404
+            )
+        return JSONResponse(
+            content={"message": "Internal server error ", "detail": e.args[0]},
+            status_code=500
+        )
+
+@router.delete("/avatar")
+async def delete_user_avatar(uid = Depends(get_user_id)):
+    try:
+        UserService()._delete_avatar(uid)
+
+        return JSONResponse(
+            content={"message": "User avatar deleted successfully"},
+            status_code=200,
+            media_type="application/json"
+        )
+
+    except Exception as e:
+        if e.args[0] == "User not find":
+            return JSONResponse(
+                content={"message": e.args[0], "detail": "Can not find any document with the uid that extracted from cookie's session"},
+                status_code=404
+            )
+        return JSONResponse(
+            content={"message": "Internal server error ", "detail": e.args[0]},
+            status_code=500
+        )

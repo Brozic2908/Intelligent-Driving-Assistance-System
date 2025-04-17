@@ -29,11 +29,13 @@ class Database:
             CustomLogger().get_logger().info("Database's config: " + str(config))
 
         self.client = MongoClient(config["mongo_url"])
+        CustomLogger().get_logger().info(f"Database: Connected with client {self.client}.")
         if test_mode:
             CustomLogger().get_logger().info("Database: Test mode.")
             self.db = self.client['test']
         else:
             self.db = self.client[config["db_name"]]
+            CustomLogger().get_logger().info(f"Database: Connected with database {self.db}.")
         self.collections = set()
 
     def _add_doc_with_timestamp(self, collection_name=None, document=None):
@@ -48,29 +50,25 @@ class Database:
         CustomLogger().get_logger().info(f'Added document with ID: {result.inserted_id}')
         return result.inserted_id
     
-# User region
     def get_user_collection(self):
         return self.db.get_collection('user')
     
     def get_user_doc_by_id(self, id):
         return self.get_user_collection().find_one({'_id': id})
-# End user region
     
-# UserConfig region
-    def get_userconfig_collection(self):
-        return self.db.get_collection('userconfig')
-    
-    def get_userconfig_doc_by_id(self, id):
-        return self.get_userconfig_collection().find_one({'_id': id})
-# End userconfig region
-    
-# Sensor region
     def get_sensor_collection(self):
         return self.db.get_collection('environment_sensor')
     
     def get_sensor_doc_by_id(self, id):
         return self.get_sensor_collection().find_one({'_id': id})
-# End sensor region
+    
+    def get_services_status_collection(self):
+        return self.db.get_collection('services_status')
+
+# Device region
+    def get_device_collection(self):
+        return self.db.get_collection('device_control')
+# End device region
 
 if __name__ == '__main__':
     def test():

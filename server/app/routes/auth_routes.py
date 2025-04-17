@@ -1,23 +1,19 @@
-# import os
-# import sys
-# sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from utils.custom_logger import CustomLogger
 
-from fastapi import APIRouter, HTTPException, Request, Response
+from fastapi import APIRouter, Request, Response
 from starlette.responses import JSONResponse
 
-from models.request import UserRequest
+from pymongo.errors import PyMongoError
+
 from services.auth_service import AuthService
+
+from models.request import UserRequest
 
 router = APIRouter()
 
 @router.post("/register")
 async def register(user: UserRequest):
-    if not user or not user.username or not user.password:
-        raise HTTPException(status_code=400, detail="Invalid request")
-    
     try:
-        CustomLogger().get_logger().info(f"Register request for user: {user.username}")
         result = AuthService()._register(user)
         CustomLogger().get_logger().info(f"Register result: {result}")
 
@@ -27,21 +23,32 @@ async def register(user: UserRequest):
                 status_code=201
             )
         else:
-            raise HTTPException(status_code=500, detail="Internal server error")
+            return JSONResponse(
+                content={"message": "User not created"},
+                status_code=500
+            )
 
     except Exception as e:
-        if e.args[0] == "Username already exists":
-            raise HTTPException(status_code=400, detail="Username already exists")
+        if e.__class__ == PyMongoError:
+            # raise HTTPException(status_code=500, detail="Can not operate database transaction")
+            return JSONResponse(
+                content={"message": "Can not operate database transaction"},
+                status_code=500
+            )
+        elif e.args[0] == "Username already exists":
+            return JSONResponse(
+                content={"message": "Username already exists"},
+                status_code=409
+            )
         else:
-            raise HTTPException(status_code=500, detail="Internal server error")
+            return JSONResponse(
+                content={"message": "Internal server error ", "detail": e.args[0]},
+                status_code=500
+            )
 
 @router.patch("/login")
 async def login(user: UserRequest, response: Response):
-    if not user.username or not user.password:
-        raise HTTPException(status_code=400, detail="Invalid request")
-
     try:
-        CustomLogger().get_logger().info(f"Login request for user: {user.username}")
         session_id, userid = AuthService()._authenticate(user)
         CustomLogger().get_logger().info(f"Login result: {session_id} - {userid}")
 
@@ -50,36 +57,57 @@ async def login(user: UserRequest, response: Response):
                 content={"message": "Login successful"},
                 status_code=200
             )
-            response = AuthService()._add_cookie(response, session_id)
+            response = AuthService()._add_cookie_session(response, session_id)
             
             return response
         else:
-            raise HTTPException(status_code=500, detail="Internal server error")
+            return JSONResponse(
+                content={"message": "Failed to create session"},
+                status_code=401
+            )
 
     except Exception as e:
         if e.args[0] == "Invalid credentials":
-            raise HTTPException(status_code=401, detail="Invalid credentials")
+            return JSONResponse(
+                content={"message": "Invalid credentials"},
+                status_code=401
+            )
         else:
-            raise HTTPException(status_code=500, detail="Internal server error")
+            return JSONResponse(
+                content={"message": "Internal server error ", "detail": e.args[0]},
+                status_code=500
+            )
 
 @router.patch("/logout")
 async def logout(request: Request, response: Response):
     session_id = request.cookies.get("session_id")
     if not session_id:
-        raise HTTPException(status_code=400, detail="No active session found")
+        return JSONResponse(
+            content={"message": "Unauthorized: Missing session token"},
+            status_code=401
+        )
 
     try:
         result = AuthService()._del_session(session_id)
+        CustomLogger().get_logger().info(f"Logout result: {result}")
         if result:
             response = JSONResponse(
                 content={"message": "Logout successful"},
                 status_code=200
             )
-            response.delete_cookie("session_id")  # Delete cookie from client
+            # response.delete_cookie("session_id")
+            response = AuthService()._del_cookie_session(response)
+
             return response
         else:
-            raise HTTPException(status_code=500, detail="Session not found")
+            return JSONResponse(
+                content={"message": "Failed to delete session"},
+                status_code=500
+            )
     
     except Exception as e:
-        raise HTTPException(status_code=500, detail="Internal server error")
+        return JSONResponse(
+            content={"message": "Internal server error ", "detail": e.args[0]},
+            status_code=500
+        )
 

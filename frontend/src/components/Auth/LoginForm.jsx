@@ -1,13 +1,17 @@
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { useContext } from 'react';
+
+import axios from 'axios'; 
+
+import { UserContext } from '../../hooks/UserContext.jsx';
 
 function LoginForm({ showSignUp }) {
   const navigate = useNavigate();
+  const { setSessionId } = useContext(UserContext);
 
   const handleLogin = (e) => {
-    e.preventDefault(); // Ngăn form submit mặc định
-    navigate('/home'); // Chuyển hướng sang Home
-    // Giả lập logic đăng nhập (bạn có thể thêm gọi API ở đây)
+    e.preventDefault();
+
     const username = document.getElementById('username_log').value;
     const password = document.getElementById('password_log').value;
     
@@ -20,20 +24,23 @@ function LoginForm({ showSignUp }) {
       username: username,
       password: password
     }
-
-    axios.patch('http://127.0.0.1:8000/auth/login', request)
-      .then(response => {
-        if (response.status === 200) {
-          navigate('/home');
-        } else {
-          alert('Login failed');
+    
+    axios.patch(`${import.meta.env.VITE_SERVER_URL}/auth/login`, request, 
+      {
+        withCredentials: true,
+        headers: {
+          'Content-Type': 'application/json'
         }
+      }
+    )
+      .then(response => {
+        console.log(`Login successful with response: ${response}`);
+        navigate('/home');
       })
       .catch(error => {
         console.error('Error:', error);
         alert('An error occurred during login');
       });
-
   };
 
   return (

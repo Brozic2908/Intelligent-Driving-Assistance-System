@@ -1,6 +1,8 @@
 import sys
 import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+# Add the root path to the sys.path to import the modules
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__))))
+
 from utils.custom_logger import CustomLogger
 
 from fastapi import FastAPI
@@ -12,24 +14,30 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Hoặc thay "*" bằng frontend URL, ví dụ: ["http://localhost:5500"]
+    allow_origins=["http://localhost:5173", "http://localhost:9000"],  # First one is app client, second one is iot-server
     allow_credentials=True,
-    allow_methods=["*"],  # Cho phép tất cả các phương thức (POST, GET, OPTIONS, ...)
-    allow_headers=["*"],  # Cho phép tất cả các headers
+    allow_methods=["*"],
+    allow_headers=["*"]
 )
 app.add_middleware(AuthMiddleware)
+
+from routes.auth_routes import router as auth_router
+app.include_router(auth_router, prefix='/auth')
+
+from routes.user_routes import router as user_router
+app.include_router(user_router, prefix='/user')
+
+from routes.iot_routes import router as iot_router
+app.include_router(iot_router, prefix='/iot')
+
+from routes.app_routes import router as app_router
+app.include_router(app_router, prefix='/app')
+
+# for route in app.routes:
+#     CustomLogger().get_logger().info(route)
 
 if __name__ == '__main__':
     CustomLogger().get_logger().info("main: __main__")
 
-    from routes.auth_routes import router as auth_router
-    app.include_router(auth_router, prefix='/auth')
-
-    from routes.user_routes import router as user_router
-    app.include_router(user_router, prefix='/user')
-
-    from routes.iot_routes import router as sensor_router
-    app.include_router(sensor_router, prefix='/sensor')
-
     import uvicorn
-    uvicorn.run(app, host='127.0.0.1', port=8000)
+    uvicorn.run('main:app', host='127.0.0.1', port=8000, reload=True)

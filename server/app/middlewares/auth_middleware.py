@@ -1,7 +1,6 @@
 # import os
 # import sys
 # sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
-import secrets
 from utils.custom_logger import CustomLogger
 
 from fastapi import Request
@@ -21,15 +20,23 @@ class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         # Skip authentication for whitelisted paths
         if request.url.path in self.whitelist:
-            CustomLogger().get_logger().info("AuthMiddleware: Skip authentication for whitelisted path")
+            CustomLogger().get_logger().info(f"AuthMiddleware: Skip authentication for {request.url.path}")
+            return await call_next(request)
+        
+        elif request.method == "OPTIONS":
+            CustomLogger().get_logger().info(f"AuthMiddleware: Preflight request for {request.method}-{request.url.path}")
             return await call_next(request)
 
         # Check for session token in cookies
         session_id = request.cookies.get("session_id")
         if not session_id:
-            return JSONResponse({"detail": "Unauthorized: Missing session token"}, status_code=401)
+            CustomLogger().get_logger().info("AuthMiddleware: Missing session token")
+            return JSONResponse(
+                content={"detail": "Unauthorized: Missing session token"},
+                status_code=401
+            )
 
-        # Validate session in Redis
+    # Validate session in Redis
         # session_data = redis_client.hgetall(session_id)
         # if not session_data:
         #     return JSONResponse({"detail": "Unauthorized: Invalid or expired session token"}, status_code=401)
@@ -45,10 +52,12 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 status_code=401
             )
 
-        CustomLogger().get_logger().info(f"AuthMiddleware: User info: {user}")
+        CustomLogger().get_logger().info(f"AuthMiddleware: User info: {user['username']} - {str(user['_id'])}")
 
         user_id = user["_id"]
         expiration_time = user["session_expiration"]
+
+        request.state.user_id = str(user_id)
 
         # Check session expiration
         if expiration_time.timestamp() - datetime.now().timestamp() < timedelta(minutes=10).total_seconds():
@@ -62,11 +71,7 @@ class AuthMiddleware(BaseHTTPMiddleware):
                 )
             
             response = await call_next(request)
-            response = AuthService()._add_cookie(response, new_session_id)
-            request.state.user_id = str(user_id)
+            response = AuthService()._add_cookie_session(response, new_session_id)
             return response
 
-
-        # Attach user info to the request for further use
-        request.state.user_id = str(user_id)
         return await call_next(request)
