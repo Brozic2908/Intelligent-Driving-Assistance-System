@@ -10,10 +10,14 @@ const SideBar = () => {
   const handleLogout = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.patch(`${import.meta.env.VITE_SERVER_URL}/auth/logout`, {}, {
-        withCredentials: true,
-        headers: { 'Content-Type': 'application/json' }
-      });
+      const response = await axios.patch(
+        `${import.meta.env.VITE_SERVER_URL}/auth/logout`,
+        {},
+        {
+          withCredentials: true,
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
 
       if (response.status === 200) {
         console.log('Logout successful: ', response.data);
@@ -67,12 +71,12 @@ const SideBar = () => {
           </NavLink>
         </li>
         <li>
-          <button className={styles.sidebarLink} onClick={handleLogout}>
+          <NavLink to="/" className={({ isActive }) => clsx(styles.sidebarLink, isActive ? styles.active : '')}>
             <div className={styles.icon}>
               <i className="fa-solid fa-right-from-bracket"></i>
             </div>
             Logout
-          </button>
+          </NavLink>
         </li>
       </ul>
     </nav>
